@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ultimate AI Financial Bot - Portal</title>
+    
+    <!-- Penambahan Favicon / Ikon Tab (.png) -->
+    <link rel="icon" type="image/png" href="axalogo.png">
+    
     <!-- Socket.io Client dari CDN -->
     <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
     <style>
@@ -87,15 +91,33 @@
             margin-bottom: 2rem;
         }
 
+        .title-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        /* Styling Logo di Header */
+        .app-logo {
+            width: 48px;
+            height: 48px;
+            object-fit: contain;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 4px;
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
         .title-group h1 {
-            font-size: 1.5rem;
+            font-size: 1.35rem;
             font-weight: 700;
             letter-spacing: -0.025em;
         }
 
         .title-group p {
             color: var(--text-secondary);
-            font-size: 0.875rem;
+            font-size: 0.8rem;
             margin-top: 0.25rem;
         }
 
@@ -324,9 +346,14 @@
         </div>
 
         <div class="header">
-            <div class="title-group">
-                <h1>AI Financial Bot</h1>
-                <p>Enterprise WhatsApp Hub</p>
+            <div class="title-wrapper">
+                <!-- Penambahan Logo Aplikasi (.png) -->
+                <img src="axalogo.png" alt="App Logo" class="app-logo" onerror="this.style.display='none'; console.warn('Logo axalogo.png belum diunggah.');">
+                
+                <div class="title-group">
+                    <h1>AI Financial Bot</h1>
+                    <p>Enterprise WhatsApp Hub</p>
+                </div>
             </div>
             <button class="theme-toggle" id="themeToggle" title="Toggle Theme">🌙</button>
         </div>
@@ -387,34 +414,47 @@
         const pairingCodeDisplay = document.getElementById('pairingCodeDisplay');
 
         // Theme Logic
-        themeToggle.addEventListener('click', () => {
-            const currentTheme = htmlElement.getAttribute('data-theme');
-            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-            htmlElement.setAttribute('data-theme', newTheme);
-            themeToggle.textContent = newTheme === 'dark' ? '🌙' : '☀️';
-        });
+        if(themeToggle) {
+            themeToggle.addEventListener('click', () => {
+                const currentTheme = htmlElement.getAttribute('data-theme');
+                const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                htmlElement.setAttribute('data-theme', newTheme);
+                themeToggle.textContent = newTheme === 'dark' ? '🌙' : '☀️';
+            });
+        }
 
-        // Tab Logic
+        // Tab Logic (Fixed: Error Handling jika elemen tidak ditemukan)
         tabBtns.forEach(btn => {
             btn.addEventListener('click', () => {
-                tabBtns.forEach(b => b.classList.remove('active'));
-                tabContents.forEach(c => c.classList.remove('active'));
-                btn.classList.add('active');
-                document.getElementById(btn.getAttribute('data-target')).classList.add('active');
+                try {
+                    tabBtns.forEach(b => b.classList.remove('active'));
+                    tabContents.forEach(c => c.classList.remove('active'));
+                    btn.classList.add('active');
+                    
+                    const targetId = btn.getAttribute('data-target');
+                    const targetEl = document.getElementById(targetId);
+                    if(targetEl) targetEl.classList.add('active');
+                } catch (err) {
+                    console.warn('Error saat pindah tab UI:', err);
+                }
             });
         });
 
         function updateStatus(state, message) {
+            if(!statusBar) return;
             statusBar.className = 'status-bar'; 
             if (state === 'connected') statusBar.classList.add('status-connected');
             if (state === 'error') statusBar.classList.add('status-error');
             statusText.textContent = message;
         }
 
-        // --- KONEKSI WEBSOCKET KE VPS EXTERNAL ---
-        // Menghubungkan client Vercel ke Server Node.js di VPS
+        // --- KONEKSI WEBSOCKET KE VPS EXTERNAL (FIXED & SAFE) ---
+        // Penambahan konfigurasi untuk mencegah *Infinite Polling Console Spam* // yang sering terjadi jika BACKEND_URL kosong/salah.
         const socket = io(BACKEND_URL, {
-            transports: ['websocket', 'polling']
+            transports: ['websocket', 'polling'],
+            reconnectionAttempts: 5, // Berhenti mencoba ulang setelah 5x gagal (mencegah konsol error nge-spam)
+            reconnectionDelay: 2000, // Jeda 2 detik
+            timeout: 10000
         }); 
 
         socket.on('connect', () => {
@@ -422,55 +462,74 @@
         });
 
         socket.on('connect_error', (err) => {
-            console.error('Socket Error:', err);
-            updateStatus('error', 'Gagal menghubungi server backend.');
+            // Mencegah console.error bawaan memenuhi log, tampilkan peringatan rapi
+            console.warn('[Socket.io] Koneksi ke Backend VPS gagal atau terputus.');
+            updateStatus('error', 'Gagal terhubung ke Backend Server.');
         });
 
         socket.on('qr', (qrDataUrl) => {
-            qrSpinner.style.display = 'none';
-            qrImage.src = qrDataUrl;
-            qrImage.style.display = 'block';
+            if(qrSpinner) qrSpinner.style.display = 'none';
+            if(qrImage) {
+                qrImage.src = qrDataUrl;
+                qrImage.style.display = 'block';
+            }
             updateStatus('waiting', 'Menunggu QR di-scan...');
         });
 
         socket.on('pairing_code', (code) => {
-            loader.classList.remove('active');
-            pairingCodeDisplay.style.display = 'block';
-            pairingCodeDisplay.textContent = code;
+            if(loader) loader.classList.remove('active');
+            if(pairingCodeDisplay) {
+                pairingCodeDisplay.style.display = 'block';
+                pairingCodeDisplay.textContent = code;
+            }
             updateStatus('waiting', 'Masukkan kode di notifikasi WA Anda');
         });
 
         socket.on('wa_status', (status) => {
             if (status === 'connected') {
                 updateStatus('connected', 'WhatsApp Berhasil Terhubung! ✅');
-                qrImage.style.display = 'none';
-                qrSpinner.style.display = 'none';
-                pairingCodeDisplay.style.display = 'none';
                 
-                document.getElementById('qrBox').innerHTML = `
-                    <div style="text-align: center; color: #22c55e;">
-                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-                        <h3 style="margin-top: 1rem;">Tersambung</h3>
-                    </div>`;
+                // Menyembunyikan elemen secara aman
+                if(qrImage) qrImage.style.display = 'none';
+                if(qrSpinner) qrSpinner.style.display = 'none';
+                if(pairingCodeDisplay) pairingCodeDisplay.style.display = 'none';
+                
+                const qrBox = document.getElementById('qrBox');
+                if(qrBox) {
+                    qrBox.innerHTML = `
+                        <div style="text-align: center; color: #22c55e;">
+                            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                            <h3 style="margin-top: 1rem;">Tersambung</h3>
+                        </div>`;
+                }
             } else if (status === 'connecting') {
                 updateStatus('waiting', 'Menghubungkan ke WhatsApp...');
             }
         });
 
         socket.on('disconnect', () => {
-            updateStatus('error', 'Terputus dari server. Retrying...');
+            updateStatus('error', 'Terputus dari server. Reconnecting...');
         });
 
-        reqPairingBtn.addEventListener('click', () => {
-            const phone = phoneInput.value.replace(/\D/g, ''); 
-            if (!phone || phone.length < 10) {
-                alert('Masukkan nomor WhatsApp yang valid (contoh: 62812...)');
-                return;
-            }
-            
-            loader.classList.add('active');
-            socket.emit('request_pairing', phone);
-        });
+        // Fixed: Menggunakan try-catch agar jika regex manipulasi string error, tidak akan crash
+        if(reqPairingBtn) {
+            reqPairingBtn.addEventListener('click', () => {
+                try {
+                    const phone = phoneInput.value.replace(/\D/g, ''); 
+                    if (!phone || phone.length < 10) {
+                        alert('Masukkan nomor WhatsApp yang valid (contoh: 62812...)');
+                        return;
+                    }
+                    
+                    if(loader) loader.classList.add('active');
+                    socket.emit('request_pairing', phone);
+                } catch(error) {
+                    console.error('Error saat submit pairing:', error);
+                    updateStatus('error', 'Terjadi kesalahan sistem.');
+                    if(loader) loader.classList.remove('active');
+                }
+            });
+        }
     </script>
 </body>
 </html>
