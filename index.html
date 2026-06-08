@@ -139,11 +139,10 @@
 
     <script>
         // =========================================================================
-        // ⚠️ PENTING: GANTI URL DI BAWAH INI DENGAN DOMAIN RAILWAY ANDA!
-        // Pastikan depannya ada "https://" dan tidak ada tanda garis miring (/) di akhir.
+        // ✅ DOMAIN RAILWAY TELAH DIPERBARUI SESUAI REQUEST
         // =========================================================================
         
-        const BACKEND_URL = 'btwafinance-production.up.railway.app'; 
+        const BACKEND_URL = 'https://btwafinance-production.up.railway.app'; 
         
         // =========================================================================
 
@@ -204,7 +203,7 @@
 
         socket.on('connect_error', (err) => {
             console.warn('[Socket.io] Gagal terhubung ke Railway:', err.message);
-            updateStatus('error', 'Gagal terhubung ke Server Railway.<br><small>Pastikan BACKEND_URL di index.html sudah diubah!</small>');
+            updateStatus('error', 'Gagal terhubung ke Server Railway.<br><small>Pastikan Railway aktif dan tidak ada error log.</small>');
             if(qrSpinner) qrSpinner.style.display = 'none';
         });
 
