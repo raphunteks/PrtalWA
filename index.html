@@ -71,7 +71,7 @@
 
         .status-bar { margin-top: 2rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.75rem; border-radius: 50px; background: rgba(0,0,0,0.1); font-size: 0.875rem; font-weight: 500; }
         .status-dot { width: 10px; height: 10px; border-radius: 50%; background: #eab308; box-shadow: 0 0 10px #eab308; animation: pulse 1.5s infinite; }
-        .status-text { color: var(--text-secondary); }
+        .status-text { color: var(--text-secondary); text-align: center; line-height: 1.4; }
         @keyframes pulse { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(234, 179, 8, 0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(234, 179, 8, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(234, 179, 8, 0); } }
         .status-connected .status-dot { background: #22c55e; box-shadow: 0 0 10px #22c55e; }
         .status-error .status-dot { background: #ef4444; box-shadow: 0 0 10px #ef4444; animation: none; }
@@ -140,9 +140,12 @@
     <script>
         // =========================================================================
         // ⚠️ PENTING: GANTI URL DI BAWAH INI DENGAN DOMAIN RAILWAY ANDA!
-        // Contoh: 'https://nama-aplikasi.up.railway.app'
+        // Pastikan depannya ada "https://" dan tidak ada tanda garis miring (/) di akhir.
         // =========================================================================
-        const BACKEND_URL = 'https://DOMAIN_RAILWAY_ANDA_DISINI.up.railway.app'; 
+        
+        const BACKEND_URL = 'btwafinance-production.up.railway.app'; 
+        
+        // =========================================================================
 
         const themeToggle = document.getElementById('themeToggle');
         const htmlElement = document.documentElement;
@@ -184,7 +187,7 @@
             statusBar.className = 'status-bar'; 
             if (state === 'connected') statusBar.classList.add('status-connected');
             if (state === 'error') statusBar.classList.add('status-error');
-            statusText.textContent = message;
+            statusText.innerHTML = message; // Menggunakan innerHTML agar bisa memuat break tag <br> jika error
         }
 
         // Koneksi Socket.io ke Railway
@@ -200,8 +203,8 @@
         });
 
         socket.on('connect_error', (err) => {
-            console.warn('[Socket.io] Gagal terhubung ke Railway. Cek BACKEND_URL.');
-            updateStatus('error', 'Gagal terhubung ke Backend Server Railway.');
+            console.warn('[Socket.io] Gagal terhubung ke Railway:', err.message);
+            updateStatus('error', 'Gagal terhubung ke Server Railway.<br><small>Pastikan BACKEND_URL di index.html sudah diubah!</small>');
             if(qrSpinner) qrSpinner.style.display = 'none';
         });
 
